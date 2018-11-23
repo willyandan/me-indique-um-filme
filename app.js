@@ -2,25 +2,31 @@ const nlp = require('./nlp')
 const search = require('./searcher')
 const button = require("node-telegram-keyboard-wrapper")
 const TelegramBot = require('node-telegram-bot-api');
-const token = '';
-const bot = new TelegramBot(token, {polling: true});
+const env = require("./env.json")
 
+const token = env.telegram_token;
+const bot = new TelegramBot(token, {polling: true});
 const cv_ativas = {}
 
 async function getReponse(obj, id){
   const entities = obj.entities
   const intent = obj.intent
   const answer = obj.answer?obj.answer:"Desculpe não entendi"
-  
+  let dia, horario, dia_horario, cinema
+
   if(cv_ativas[id]){
     const conv = cv_ativas[id]
+    if(intent == "cancelar"){
+      bot.sendMessage(id,answer);
+      delete cv_ativas[id]
+      return
+    }
     if(conv.status == "waiting"){
       bot.sendMessage(id,"Aguarde um minuto por favor")
       return
     }
     if(conv.intent == "cinema"){ 
       const dia = entities.find((val)=>val.entity == "date")
-      const dia_horario = entities.find((val)=>val.entity == "datetime")
       const cinema = entities.find((val)=>val.entity == "cinema")
       
       if(dia) cv_ativas[id].entities.dia = dia.resolution.strPastValue
@@ -30,6 +36,15 @@ async function getReponse(obj, id){
       }
       searchCinema(cv_ativas[id],id)
     }
+    if(conv.intent == "agendar"){
+      dia = entities.find((val)=>val.entity == "date")
+      horario = entities.find((val)=>val.entity == "time")
+      dia_horario = entities.find((val)=>val.entity == "datetime")
+      if(dia) cv_ativas[id].entities.dia = dia.resolution.strPastValue
+      if(horario) cv_ativas[id].entities.horario = horario.resolution.values[0].value
+      if(dia_horario) cv_ativas[id].entities.dia_horario = dia_horario.resolution.values[1].value
+      getAgendamento(cv_ativas[id],id)
+    }
   }else{
     switch(intent){
       case 'cumprimento':
@@ -37,14 +52,14 @@ async function getReponse(obj, id){
         bot.sendMessage(id,answer)
         break
       case 'cinema':
-        const dia = entities.find((val)=>val.entity == "date")
-        const horario = entities.find((val)=>val.entity == "time")
-        const dia_horario = entities.find((val)=>val.entity == "datetime")
-        const cinema = entities.find((val)=>val.entity == "cinema")
-        const ents = {
+        dia = entities.find((val)=>val.entity == "date")
+        horario = entities.find((val)=>val.entity == "time")
+        dia_horario = entities.find((val)=>val.entity == "datetime")
+        cinema = entities.find((val)=>val.entity == "cinema")
+        ents = {
           "dia":dia?dia.resolution.strPastValue:null,
           "horario":horario?horario.resolution.values[0].value:null,
-          "dia_horario":dia_horario?dia_horario.resolution.values[0].value:null,
+          "dia_horario":dia_horario?dia_horario.resolution.values[1].value:null,
           "cinema_id": cinema?cinema.option:null,
           "cinema_name":cinema?cinema.sourceText:null
         }
@@ -54,6 +69,22 @@ async function getReponse(obj, id){
           status:"waiting"
         }
         searchCinema(cv_ativas[id],id)
+        break
+      case 'agendar':
+        dia = entities.find((val)=>val.entity == "date")
+        horario = entities.find((val)=>val.entity == "time")
+        dia_horario = entities.find((val)=>val.entity == "datetime")
+        ents = {
+          "dia":dia?dia.resolution.strPastValue:null,
+          "horario":horario?horario.resolution.values[0].value:null,
+          "dia_horario":dia_horario?dia_horario.resolution.values[1].value:null,
+        }
+        cv_ativas[id] = {
+          intent:intent,
+          entities:ents,
+          status:"waiting"
+        }
+        getAgendamento(cv_ativas[id],id)
         break
       default:
         bot.sendMessage(id,answer)
@@ -68,7 +99,7 @@ async function searchCinema(user,id){
     let dia
     if(ents.dia_horario){
       const d = new Date(ents.dia_horario)
-      dia = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+      dia = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
     }else{
       const d = ents.dia.split("-")
       dia = `${d[0]}-${d[2]}-${d[1]}`
@@ -128,6 +159,32 @@ async function searchCinema(user,id){
     user.status="ready"
   }
 }
+
+async function getAgendamento(user, id){
+  const ents = user.entities
+  if(ents["dia_horario"]){
+    console.log(ents["dia_horario"])
+    bot.sendMessage(id, "dia e horario")
+    user.status="ready"
+  }
+  else if(ents["dia"] && ents["horario"]){
+
+    bot.sendMessage(id, "dia e horario")
+    user.status="ready"
+  }
+  else if(ents["dia"]){
+    bot.sendMessage(id,"Ok agora só falta o horário")
+    user.status="ready"
+
+  }else if(ents["horario"]){
+    bot.sendMessage(id,`Agendando para hoje as ${ents["horario"].slice(0,-3)}`)
+    user.status="ready"
+
+  }else{
+    bot.sendMessage(id,"Beleza, só me diga o dia e o horário, ou só o horario caso for para hoje")
+    user.status="ready"
+  }
+} 
 
 bot.on("message",(msg)=>{
   nlp.parse(msg.text).then(val=>{

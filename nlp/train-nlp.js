@@ -1,11 +1,5 @@
 
-const fs = require('fs');
-
-module.exports = async function trainnlp(manager) {
-  if (fs.existsSync('./models/model.nlp')) {
-    manager.load('./models/model.nlp');
-    return;
-  }
+async function trainnlp(manager) {
   //INTENÇÕES DE CUMPRIMENTO
   manager.addDocument('pt', 'ola', 'cumprimento');
   manager.addDocument('pt', 'oi', 'cumprimento');
@@ -36,6 +30,17 @@ module.exports = async function trainnlp(manager) {
   manager.addDocument('pt', 'flw', 'despedida');
   manager.addDocument('pt', 'nos vemos por ai', 'despedida');
   
+  //INTENÇÃO DE AGENDAMENTO
+  manager.addDocument("pt", "queria fazer um agendamento", "agendar")
+  manager.addDocument("pt", "Gostaria de agendar um horário", "agendar");
+  manager.addDocument("pt", "Me agende um horario por favor", "agendar");
+  manager.addDocument("pt", "Gostaria de um agendamento", "agendar");
+  manager.addDocument("pt", "pode me agendar um horário?", "agendar");
+
+  //INTENÇÃO DE CANCELAMENTO
+  manager.addDocument("pt","cancelar","cancelar")
+  manager.addDocument("pt","quero cancelar","cancelar")
+  manager.addDocument("pt","cancela por favor","cancelar")
 
   //TREINANDO INTENÇÕES
   console.info('Training, please wait..');
@@ -77,6 +82,12 @@ module.exports = async function trainnlp(manager) {
   manager.addAnswer('pt', 'despedida', "Até");
   manager.addAnswer('pt', 'despedida', "Até um outro dia");
   manager.addAnswer('pt', 'despedida', "Tchau");
+
+  //RESPOSTAS PARA CANCELAR
+  manager.addAnswer("pt","cancelar","Cancelar")
   
   manager.save('./models/model.nlp');
 };
+const { NlpManager } = require('node-nlp/lib')
+const nlpManager = new NlpManager({ languages: ['pt'] });
+trainnlp(nlpManager)
