@@ -3,10 +3,20 @@ const search = require('./searcher')
 const button = require("node-telegram-keyboard-wrapper")
 const TelegramBot = require('node-telegram-bot-api');
 const env = require("./env.json")
+const Agenda = require("./agenda")
+
+const agenda = new Agenda()
 
 const token = env.telegram_token;
 const bot = new TelegramBot(token, {polling: true});
 const cv_ativas = {}
+
+agenda.getAgendas((val)=>{
+  for (let v = 0; v < val.length; v++) {
+    const element = val[v];
+    bot.sendMessage(element.telegram_id, "Ei você tem um filme agendado para agora")
+  }
+})
 
 async function getReponse(obj, id){
   const entities = obj.entities
@@ -76,7 +86,7 @@ async function getReponse(obj, id){
         dia_horario = entities.find((val)=>val.entity == "datetime")
         ents = {
           "dia":dia?dia.resolution.strPastValue:null,
-          "horario":horario?horario.resolution.values[0].value:null,
+          "horario":horario&&horario.resolution?horario.resolution.values[0].value:null,
           "dia_horario":dia_horario?dia_horario.resolution.values[1].value:null,
         }
         cv_ativas[id] = {
@@ -163,22 +173,31 @@ async function searchCinema(user,id){
 async function getAgendamento(user, id){
   const ents = user.entities
   if(ents["dia_horario"]){
-    console.log(ents["dia_horario"])
-    bot.sendMessage(id, "dia e horario")
-    user.status="ready"
+    const d = new Date(ents["dia_horario"])
+    bot.sendMessage(id, `Estamos agendando para ${d.getDate()}/${d.getMonth()}/${d.getFullYear()} às ${d.getHours()}:${d.getMinutes()}`)
+    await agenda.save(id,d)
+    delete cv_ativas[id]
   }
   else if(ents["dia"] && ents["horario"]){
-
-    bot.sendMessage(id, "dia e horario")
-    user.status="ready"
+    const d = new Date(ents["dia"])
+    const h = ents["horario"].split(":")
+    d.setHours(parseInt(h[0]), parseInt(h[1]), parseInt(h[2]))
+    bot.sendMessage(id, `Estamos agendando para ${d.getDate()}/${d.getMonth()}/${d.getFullYear()} às ${d.getHours()}:${d.getMinutes()}`)
+    await agenda.save(id,d)
+    delete cv_ativas[id]
   }
   else if(ents["dia"]){
     bot.sendMessage(id,"Ok agora só falta o horário")
     user.status="ready"
 
   }else if(ents["horario"]){
-    bot.sendMessage(id,`Agendando para hoje as ${ents["horario"].slice(0,-3)}`)
-    user.status="ready"
+    const d = new Date()
+    const h = ents["horario"].split(":")
+    d.setHours(parseInt(h[0]), parseInt(h[1]), parseInt(h[2]))
+
+    bot.sendMessage(id,`Agendando para hoje às ${d.getHours()}:${d.getMinutes()}`)
+    await agenda.save(id,d)
+    delete cv_ativas[id]
 
   }else{
     bot.sendMessage(id,"Beleza, só me diga o dia e o horário, ou só o horario caso for para hoje")
