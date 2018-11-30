@@ -2,12 +2,13 @@
   "name": "me-indique-um-show",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "serve": "node app.js"
   },
-  "author": "",
-  "license": "ISC",
+  "repository": "https://github.com/willyandan/me-indique-um-filme",
+  "author": "Willyan Antunes, Luan Oliveira",
+  "license": "MIT",
   "dependencies": {
     "axios": "^0.18.0",
     "mongoose": "^5.3.13",

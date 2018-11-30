@@ -1,3 +1,8 @@
+/**
+ * ME INDIQUE UM FILME
+ * Bot que consulta os cinemas de São josé dos campos e retorna
+ * todos os filmes disponiveis por dia e shopping
+ */
 const nlp = require('./nlp')
 const search = require('./searcher')
 const button = require("node-telegram-keyboard-wrapper")
@@ -10,7 +15,11 @@ const agenda = new Agenda()
 const token = env.telegram_token;
 const bot = new TelegramBot(token, {polling: true});
 const cv_ativas = {}
-
+/**
+ * getAgendas
+ * @callback Agenda.getAgendas()
+ * manda mensagem para todas as pessoas que solicitaram um agendamento em tal horario
+ */
 agenda.getAgendas((val)=>{
   for (let v = 0; v < val.length; v++) {
     const element = val[v];
@@ -18,6 +27,14 @@ agenda.getAgendas((val)=>{
   }
 })
 
+/**
+ * getResponse
+ * @param {*} obj Objeto do parser que contem a entidade e todas as intenções da frase
+ * @param {Number} id id do telegram
+ * @description recebe um objeto do nlu e um id do telegram
+ *  verifica se essa convsersa ja existe
+ *  verifica as intenções e retira as entidades de acordo com a intenção e se a "progressão da conversa"
+ */
 async function getReponse(obj, id){
   const entities = obj.entities
   const intent = obj.intent
@@ -102,6 +119,12 @@ async function getReponse(obj, id){
   }
 }
 
+/**
+ * searchCinema
+ * @param {*} user Objeto de conversa ativa com intenção e entidades
+ * @param {Number} id id do Telegram 
+ * @description retorna cinemas, dias disponiveis e filmes dependendo das entidades do obj user
+ */
 async function searchCinema(user,id){
   const ents = user.entities
   if( (ents.dia_horario || ents.dia) && ents.cinema_id){
@@ -170,6 +193,12 @@ async function searchCinema(user,id){
   }
 }
 
+/**
+ * getAgendamento
+ * @param {*} user Objeto de conversa ativa
+ * @param {Number} id id do telegram
+ * @description pergunta por dia e horario e caso tenha as entidades necessárias salva no banco um agendamento
+ */
 async function getAgendamento(user, id){
   const ents = user.entities
   if(ents["dia_horario"]){
@@ -204,13 +233,20 @@ async function getAgendamento(user, id){
     user.status="ready"
   }
 } 
-
+/**
+ * @callback Telegram.msg
+ * analisa a mensagem e manda analisa e manda a mensagem para o getResponse
+ */
 bot.on("message",(msg)=>{
   nlp.parse(msg.text).then(val=>{
     getReponse(val,msg.chat.id)
   })
 })
 
+/**
+ * @callback Telegram.keyboard
+ * Recebe a mensagem do inline keyboard do telegram, analisa essa msg e manda ela para o getResponse
+ */
 bot.on("callback_query", (query) => {
   nlp.parse(query.data).then(val=>{
     getReponse(val,query.message.chat.id)
