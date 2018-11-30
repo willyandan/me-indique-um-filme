@@ -4,7 +4,8 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "serve": "node app.js"
+    "serve": "node app.js",
+    "train": "node nlp/train-nlp.js"
   },
   "repository": "https://github.com/willyandan/me-indique-um-filme",
   "author": "Willyan Antunes, Luan Oliveira",
