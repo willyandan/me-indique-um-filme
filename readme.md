@@ -9,7 +9,7 @@ Projeto realizado para a Fatec São José dos Campos Prof. Jessen Vidal
 **Turma:** 3ºA
 **Alunos:** Willyan Antunes, Luan Matheus
 
-## Getting start
+## Getting started
 
  1. Clone ou baixe o repositório (https://github.com/willyandan/me-indique-um-filme)
  2. Copie o arquivo env.example.json para um arquivo chamado env.json 
