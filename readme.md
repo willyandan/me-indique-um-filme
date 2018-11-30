@@ -4,9 +4,12 @@ Bot para o Telegram que auxilia o usuário a escolher um filme baseado nos cinem
 
 ## Sobre o projeto
 
-Projeto realizado para a Fatec São José dos Campos Prof. Jessen Vidal 
+Projeto realizado para a Fatec São José dos Campos Prof. Jessen Vidal
+
 **Disciplina:** Interação Humano Computado
+
 **Turma:** 3ºA
+
 **Alunos:** Willyan Antunes, Luan Matheus
 
 ## Getting started
